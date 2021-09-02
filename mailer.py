@@ -42,6 +42,7 @@ def build_html_message(recipient: str, subject: str, html_body: str) -> EmailMes
     msg.add_alternative(html_body, subtype='html')
     return msg
 
+#TODO: maybe should get a list of messages to send
 def send_mail(msg: EmailMessage) -> None:
     """
     Sends built EmailMessage object vie TLS
@@ -72,6 +73,7 @@ def main():
     html_body = build_html_body(data, html_template)
     recipient = "msam@build.aau.dk"
     msg = build_html_message(recipient, EMAIL_SUBJECT, html_body)
+
     send_mail(msg)
     # log statuses?
 
