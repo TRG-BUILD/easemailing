@@ -1,5 +1,6 @@
 import os
 import smtplib
+from typing import List, Dict
 from email.message import EmailMessage
 from bs4 import BeautifulSoup
 
@@ -13,8 +14,9 @@ HTML_TEMPLATE_PATH = os.path.join(
 EMAIL_SUBJECT = "Projekt EASE - din egen strategi"
 
 
-def fetch_data():
-    return {
+def fetch_data() -> List[Dict]:
+    return [{
+        "recipient": "pelle@goeg.dk",
         "situation1": "Når jeg er er stresset",
         "situation2": "Når bilen gerne vil køre hurtigere",
         "situation3": "Når jeg skal køre langt",
@@ -22,7 +24,7 @@ def fetch_data():
         "strategy2": "At det har konsekvenser at blive taget af politiet for at køre for stærkt",
         "strategy3": "At bruge fartpilot eller fartbegrænser til at styre min hastighed",
         "strategy_text": "Just dont press that gas too much next time my good person!"
-    }
+    }]
 
 def build_html_body(data: dict, template: str) -> str:
     """
@@ -30,8 +32,8 @@ def build_html_body(data: dict, template: str) -> str:
     """
     soup = BeautifulSoup(template, 'html.parser')
     for key, text in data.items():
-        elem = soup.find(id=key)
-        elem.string.replace_with(text)
+        if elem := soup.find(id=key):
+            elem.string.replace_with(text)
     return str(soup)
 
 def build_html_message(recipient: str, subject: str, html_body: str) -> EmailMessage:
@@ -67,12 +69,12 @@ def main():
     with open(HTML_TEMPLATE_PATH, "r") as fin:
         html_template = fin.read()
     
-    data = fetch_data()
+    persons = fetch_data()
 
     # goes to the loop for each person
-    html_body = build_html_body(data, html_template)
-    recipient = "msam@build.aau.dk"
-    msg = build_html_message(recipient, EMAIL_SUBJECT, html_body)
+    for person in persons:
+        html_body = build_html_body(person, html_template)
+        msg = build_html_message(person['recipient'], EMAIL_SUBJECT, html_body)
 
     send_mail(msg)
     # log statuses?
