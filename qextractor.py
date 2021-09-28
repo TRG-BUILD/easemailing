@@ -17,13 +17,13 @@ class QuestinaireExtractor(ABC):
         """
 
     @abstractmethod
-    def update_first_attempt(recipient_id: int, sucess: bool):
+    def update_first_attempt(self, recipient_id: int, sucess: bool):
         """
         Updates the date of succesul or fail attempt to send a first email
         """
 
     @abstractmethod
-    def update_second_attempt(recipient_id: int, sucess: bool):
+    def update_second_attempt(self, recipient_id: int, sucess: bool):
         """
         Updates the date of succesul or fail attempt to send a second email
         """
@@ -67,7 +67,7 @@ class LocalSQLiteExtractor(QuestinaireExtractor):
         """
         return []
 
-    def update_first_attempt(recipient_id: int, sucess: bool):
+    def update_first_attempt(self, recipient_id: int, sucess: bool):
         """
         Updates the date of succesul or fail attempt to send a first email
 
@@ -79,7 +79,7 @@ class LocalSQLiteExtractor(QuestinaireExtractor):
         """
         pass
 
-    def update_second_attempt(recipient_id: int, sucess: bool):
+    def update_second_attempt(self, recipient_id: int, sucess: bool):
         """
         Updates the date of succesul or fail attempt to send a second email
 
