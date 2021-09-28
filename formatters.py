@@ -15,6 +15,7 @@ class SurveyResult:
     situation_tag: str = "situation{}"
     response_tag: str = "strategi{}"
 
+
     def get_response_dict(self):
         """
         Returns formatted responses for easier insertion into emails
@@ -38,7 +39,7 @@ class SurveyResult:
         return result
 
 
-class ResultFormatter(ABC):
+class SurveyFormatter(ABC):
     @abstractmethod
     def format(self, data: List[tuple]) -> List[SurveyResult]:
         """
@@ -46,7 +47,7 @@ class ResultFormatter(ABC):
         """
 
 
-class SQLiteResultFormatter(ResultFormatter):
+class SQLiteSurveyFormatter(SurveyFormatter):
     """ Field order in SQLiteExtractor result
         respondentid,
         days_since,

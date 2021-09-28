@@ -1,7 +1,7 @@
 import sqlite3
 from abc import ABC, abstractmethod
 
-class QuestinaireExtractor(ABC):
+class SurveyDataset(ABC):
     @abstractmethod
     def get_first_attempt_mailing(self) -> list:
         """
@@ -29,7 +29,7 @@ class QuestinaireExtractor(ABC):
         """
 
 
-class LocalSQLiteExtractor(QuestinaireExtractor):
+class LocalSQLiteDataset(SurveyDataset):
     """
     Extract and update local sqlite3 questinoare database
     """
@@ -93,7 +93,8 @@ class LocalSQLiteExtractor(QuestinaireExtractor):
 
 
 if __name__ == "__main__":
-    sqlm = LocalSQLiteExtractor(db="env/testdb.sqlite3")
+    test_db = "env/testdb.sqlite3"
+    sqlm = LocalSQLiteDataset(test_db)
     print(sqlm.get_first_attempt_mailing())
 
 

@@ -1,26 +1,23 @@
 import os
-import qextractor
-import qformatter
-import qmailer
+import datapipelines
+import mailer
 
 
 def first_attempt_job(
-    extractor: qextractor.QuestinaireExtractor,
-    formatter: qformatter.ResultFormatter,
-    email_builder: qmailer.SurveyEMailBuilder,
-    mailer: qmailer.EMailSender
+    datapipeline: datapipelines.Pipeline,
+    email_builder: mailer.SurveyEmailBuilder,
+    mailer: mailer.EmailSender
     ):
     """
     proceed first reminder
     """
-    db_rows= extractor.get_first_attempt_mailing()
-    survey_results = formatter.format(db_rows)
+    survey_results = datapipeline.get_first_attempt_mailing()
 
     for survey in survey_results:
-        if survey.days_since >= 7:
+        if survey.days_since >= 7: # hardcoded crap
             email = email_builder.build(survey)
             success = mailer.send_localhost(email)
-            extractor.update_first_attempt(survey.recipient_id, success)
+            datapipeline.update_first_attempt(survey.recipient_id, success)
 
 
 if __name__ == "__main__":
@@ -38,10 +35,11 @@ if __name__ == "__main__":
     server = 'smtp.aau.dk'
     
     # extraction from DB
-    extractor = qextractor.LocalSQLiteExtractor(db_path)
-    formatter = qformatter.SQLiteResultFormatter()
+    datapipeline = datapipelines.LocalSQLPipeline(db_path)
     
-    email_builder = qmailer.HTMLSurveyEmailBuilder(email_sender, html_template, subject)
-    mailer = qmailer.EmailSender(email_sender, email_pass, server)
+    email_builder = mailer.HTMLSurveyEmailBuilder(
+        email_sender, html_template, subject)
+    mailer = mailer.EmailSender(
+        email_sender, email_pass, server)
 
-    first_attempt_job(extractor, formatter, email_builder, mailer)
+    first_attempt_job(datapipeline, email_builder, mailer)

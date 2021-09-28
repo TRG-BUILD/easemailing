@@ -2,10 +2,10 @@ import os
 import smtplib
 from typing import List, Dict
 from abc import ABC, abstractmethod
-
 from email.message import EmailMessage
+
 from bs4 import BeautifulSoup
-from qformatter import SurveyResult
+from formatters import SurveyResult
 
 
 class EmailSender:
@@ -96,8 +96,6 @@ def main():
     
     subject = "Projekt EASE - din egen strategi"
 
-    
-
     email_user = os.environ.get('EMAIL_USER')
     email_pass = os.environ.get('EMAIL_PASS')
     builder = HTMLSurveyEmailBuilder(
@@ -106,7 +104,8 @@ def main():
     sender = EmailSender(
         email_user, email_pass, 'smtp.aau.dk')
 
-    survey = SurveyResult(0, 3, "stuff123@build.eex",
+    survey = SurveyResult(0, 3, 
+        "stuff123@build.eex",
         situations=("S1", "S2", "S3"),
         responses=("R1", "R2", "R3")
     )
