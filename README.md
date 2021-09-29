@@ -1,5 +1,19 @@
 # Automatic timed mail reminder for EASE project
 
+## Local installation
+
+```sh
+pip install -r requirements.txt
+pip isntall -e .
+
+```
+
+## Running tests
+
+```sh
+pytest -v
+```
+
 ## Security
 Senders email and password are not exposed and stored in environmental variables `EMAIL_USER` and `EMAIL_PASS`.
 
@@ -27,3 +41,5 @@ Check the `smtp.log` file for the sent email content
 
 ## TODO
 - When and how to log to catch unexpected errors in mailing and DB access?
+- create logger with tags
+ timestamp [EMAIL_FAIL][EMAIL_SUCCESS] with recipient_id, reminder [DB_FAIL]

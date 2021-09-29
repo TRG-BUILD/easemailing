@@ -1,6 +1,10 @@
 import sqlite3
 from abc import ABC, abstractmethod
 
+
+class DatasetError(Exception):
+    pass
+
 class SurveyDataset(ABC):
     @abstractmethod
     def get_first_attempt_mailing(self) -> list:
@@ -35,12 +39,12 @@ class LocalSQLiteDataset(SurveyDataset):
     """
     def __init__(self, db):
         self.db = db
-        self.conn = sqlite3.connect(self.db)
-        self.cursor = self.conn.cursor()
 
     def get_first_attempt_mailing(self):
-        with self.conn:
-            result = self.cursor.execute(
+        try:
+            conn = sqlite3.connect(self.db)
+            cursor = conn.cursor()
+            cursor.execute(
                 """
                 SELECT
                     respondentid,
@@ -58,7 +62,15 @@ class LocalSQLiteDataset(SurveyDataset):
                     strategi_mailings
                 """
             )
-        return result.fetchall()
+            result = cursor.fetchall() 
+            cursor.close()
+            return result
+
+        except sqlite3.Error as error:
+            print("Error while connecting to sqlite", error)
+        finally:
+            if conn:
+                conn.close()
 
     def get_second_attempt_mailing(self) -> list:
         """
@@ -98,4 +110,36 @@ if __name__ == "__main__":
     print(sqlm.get_first_attempt_mailing())
 
 
+"""
+DROP VIEW strategi_mailings;
 
+CREATE VIEW strategi_mailings
+as
+SELECT
+    respondentid,
+    julianday(datetime('now'))-julianday(closetime) as days_since_done,
+    closetime,
+    datetime('now') as today,
+    l1.field_text as situation1_text,
+    l2.field_text as situation2_text,
+    l3.field_text as situation3_text,
+    ls1.field_text as strategi1_text,
+    ls2.field_text as strategi2_text,
+    ls3.field_text as strategi3_text,
+    email_strategi,
+    strategi_mail_send_first,
+    strategi_mail_send_second 
+from
+    answers3 a
+    LEFT JOIN labels l1 on (a.situation1 = l1.field_value and l1.field_name = 'situation1')
+    LEFT JOIN labels l2 on (a.situation2 = l2.field_value and l2.field_name = 'situation2')
+    LEFT JOIN labels l3 on (a.situation3 = l3.field_value and l3.field_name = 'situation3')
+    LEFT JOIN labels ls1 on (a.strategi1 = ls1.field_value and ls1.field_name = 'strategi1')
+    LEFT JOIN labels ls2 on (a.strategi2 = ls2.field_value and ls2.field_name = 'strategi2')
+    LEFT JOIN labels ls3 on (a.strategi3 = ls3.field_value and ls3.field_name = 'strategi3')
+where
+    strategimail = 1 AND
+    strategireminder = 1 AND
+    (strategi_mail_send_first is null OR strategi_mail_send_second is null)
+;
+"""

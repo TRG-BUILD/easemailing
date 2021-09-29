@@ -1,12 +1,13 @@
 import os
 import datapipelines
 import mailer
-
+from logger import Logger
 
 def first_attempt_job(
     datapipeline: datapipelines.Pipeline,
     email_builder: mailer.SurveyEmailBuilder,
-    mailer: mailer.EmailSender
+    mailer: mailer.EmailSender,
+    local_logger: Logger
     ):
     """
     proceed first reminder
@@ -16,7 +17,13 @@ def first_attempt_job(
     for survey in survey_results:
         if survey.days_since >= 7: # hardcoded crap
             email = email_builder.build(survey)
-            success = mailer.send_localhost(email)
+            success = mailer.send(email, debug_mode=True)
+
+            if success:
+                local_logger.log_email_pass(survey.recipient_id, 1)
+            else:
+                local_logger.log_email_fail(survey.recipient_id, 1)
+
             datapipeline.update_first_attempt(survey.recipient_id, success)
 
 
@@ -39,7 +46,11 @@ if __name__ == "__main__":
     
     email_builder = mailer.HTMLSurveyEmailBuilder(
         email_sender, html_template, subject)
-    mailer = mailer.EmailSender(
+    sender = mailer.EmailSender(
         email_sender, email_pass, server)
 
-    first_attempt_job(datapipeline, email_builder, mailer)
+    local_logger = Logger(
+        log_name="job_log",
+        log_directory="env"
+    )
+    first_attempt_job(datapipeline, email_builder, sender, local_logger)

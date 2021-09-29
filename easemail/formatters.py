@@ -88,7 +88,7 @@ if __name__ == "__main__":
         'asdasd@build.aau.dk')
     ]
 
-    fmt = SQLiteResultFormatter()
+    fmt = SQLiteSurveyFormatter()
     result = fmt.format(db_output)
     print(result)
     print(result[0].get_situation_dict())
