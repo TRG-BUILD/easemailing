@@ -1,6 +1,6 @@
 import os
 import unittest
-from unittest.mock import patch
+from unittest.mock import patch, call
 from email.message import EmailMessage
 
 from easemail.mailer import EmailSender
@@ -22,77 +22,79 @@ def create_email(sender: str, reciever: str):
     msg['From'] = sender
     msg['To'] = reciever
     msg.set_content('mailing_test')
+    return msg
 
 
 class TestEmailSender(unittest.TestCase):
-    user=  "sender@mail.com"
+    user = "sender@mail.com"
     password = "123"
-    server = "myserver.mail.com"
+    tls_server = "myserver.mail.com"
+    tls_port = 587
+    debug_server = 'localhost'
+    debug_port = 1025
 
-    def test_works_with_emailmessage(self):
+    def test_exception_on_incorect_message(self):
         message = {"from": "A", "to": "B"}
         messages = [message]
+        es = EmailSender(self.user, self.password, self.tls_server)
+        self.assertRaises(Exception, es.send, messages, debug_mode=False)
 
-        es = EmailSender(
-            user="",
-            password="",
-            server=""
-        )
-        self.assertRaises(Exception, es.send, messages, debug_mode=True)
-
-    def test_raises_on_send_to_inactive_debug_server(self):
-        message = create_email(sender="test")
-
-        es = EmailSender(
-            user="",
-            password="",
-            server=""
-        )
+    def test_exception_on_send_to_inactive_debug_server(self):
+        message = create_email(self.user, "a@mail.com")
+        es = EmailSender(self.user, self.password, self.tls_server)
         self.assertRaises(Exception, es.send, message, debug_mode=True)
 
-    def test_can_send_one_email(self):
+    @patch('smtplib.SMTP')
+    def test_can_send_one_email_to_debug_server(self, mock_smtp):
         message = create_email(self.user, "a@mail.com")
         messages = [message]
+        es = EmailSender(self.user, self.password, self.tls_server, debug_port=self.debug_port)
+        es.send(messages, debug_mode=True)
 
-        with patch('smtplib.SMTP', autospec=True) as mock_smtp:
-            es = EmailSender(self.user, self.password, self.server)
-            es.send(messages, debug_mode=False)
+        # context manager
+        context = mock_smtp.return_value.__enter__.return_value
 
-            context = mock_smtp.return_value.__enter__.return_value
-            self.assertEqual(context.ehlo.call_count, 2)
-            context.starttls.assert_called()
-            self.assertEqual(context.login.call_count, 1)
-            context.send_message.assert_called_with(message)
-            self.assertEqual(context.send_message.call_count, 1)
+        # correct connection
+        mock_smtp.assert_called_once_with(self.debug_server, self.debug_port)
 
-    def test_can_send_list_of_emails(self):
+        # correct messaging
+        context.send_message.assert_called_with(message)
+        self.assertEqual(context.send_message.call_count, 1)
+
+    @patch('smtplib.SMTP')
+    def test_can_send_one_email_to_tls_server(self, mock_smtp):
+        message = create_email(self.user, "a@mail.com")
+        messages = [message]
+        es = EmailSender(self.user, self.password, self.tls_server, self.tls_port)
+        es.send(messages, debug_mode=False)
+
+        # context manager
+        context = mock_smtp.return_value.__enter__.return_value
+
+        # correct connection
+        mock_smtp.assert_called_once_with(self.tls_server, self.tls_port)
+        self.assertEqual(context.ehlo.call_count, 2)
+        context.starttls.assert_called()
+
+        # correct login
+        context.login.assert_called_once_with(self.user, self.password)
+
+        # correct messaging
+        context.send_message.assert_called_with(message)
+        self.assertEqual(context.send_message.call_count, 1)
+
+    @patch('smtplib.SMTP')
+    def test_can_send_list_of_emails_to_tls_server(self, mock_smtp):
         message1 = create_email(self.user, "a@mail.com")
         message2 = create_email(self.user, "b@mail.com")
         messages = [message1, message2]
+        es = EmailSender(self.user, self.password, self.tls_server, self.tls_port)
+        es.send(messages, debug_mode=False)
 
-        with patch('smtplib.SMTP', autospec=True) as mock_smtp:
+        context = mock_smtp.return_value.__enter__.return_value
 
-            es = EmailSender(self.user, self.password, self.server)
-            es.send(messages, debug_mode=False)
-
-            context = mock_smtp.return_value.__enter__.return_value
-
-            
-            # connected correctly
-            self.assertEqual(context.ehlo.call_count, 2)
-            context.starttls.assert_called()
-            self.assertEqual(context.login.call_count, 1)
-
-            # NOT TRUE!
-            """
-            self.assertEqual(context.login.called_with(
-                user="test1@gmail.com",
-                password=""),
-                True
-            )
-            """
-
-            # sent correct data
-            context.send_message.assert_called_with(message1)
-            context.send_message.assert_called_with(message2)
-            self.assertEqual(context.send_message.call_count, 2)
+        # sent correct data
+        self.assertEqual(context.send_message.call_count, 2)
+        self.assertListEqual(
+            context.send_message.call_args_list, [call(message1), call(message2)])
+        
