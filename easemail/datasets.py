@@ -13,7 +13,7 @@ class SurveyResult:
     """
     recipient_id: int
     recipient_email: int
-    days_since: int = 0
+    days_since_done: int = 0
     situations: tuple = ()
     responses: tuple = ()
     additional: tuple = ()
@@ -61,13 +61,13 @@ class SurveyDataset(ABC):
         """
 
     @abstractmethod
-    def update_first_attempt(self, recipient_id: int, sucess: bool):
+    def update_first_attempt(self, recipient_id: int, success: bool):
         """
         Updates the date of succesul or fail attempt to send a first email
         """
 
     @abstractmethod
-    def update_second_attempt(self, recipient_id: int, sucess: bool):
+    def update_second_attempt(self, recipient_id: int, success: bool):
         """
         Updates the date of succesul or fail attempt to send a second email
         """
@@ -112,7 +112,7 @@ class LocalSQLiteDataset(SurveyDataset):
             if conn:
                 conn.close()
 
-    def update_first_attempt(self, recipient_id: int, sucess: bool):
+    def update_first_attempt(self, recipient_id: int, success: bool):
         """
         Updates the date of succesul or fail attempt to send a first email
 
@@ -124,7 +124,7 @@ class LocalSQLiteDataset(SurveyDataset):
         """
         pass
 
-    def update_second_attempt(self, recipient_id: int, sucess: bool):
+    def update_second_attempt(self, recipient_id: int, success: bool):
         """
         Updates the date of succesul or fail attempt to send a second email
 
@@ -147,23 +147,23 @@ class SQLAlchemyDataset(SurveyDataset):
         self.engine = create_engine(self.db_url)
 
     def get_unsent_survey_results(self) -> List[SurveyResult]:
-        result_tuples = self._get_unsent_result_tuples()
-        return self._format_result_tuples(result_tuples) 
+        result_dicts = self._get_unsent_result_dicts()
+        return self._format_result_dicts(result_dicts) 
 
-    def _format_result_tuples(self, result_tuples: List[tuple]) -> List[SurveyResult]:
+    def _format_result_dicts(self, result_dicts: List[dict]) -> List[SurveyResult]:
         formatted = []
-        for r in result_tuples:
+        for r in result_dicts:
             sr = SurveyResult(
                 recipient_id=r["respondentid"],
                 recipient_email=r["email_strategi"],
-                days_since=r["days_since_done"],
+                days_since_done=r["days_since_done"],
                 situations=tuple([v for k, v in r.items() if k.startswith("situation")]),
-                responses=tuple([v for k, v in r.items() if k.startswith("strategi")])
+                responses=tuple([v for k, v in r.items() if "strategi" in k and "text" in k])
             )
             formatted.append(sr)
         return formatted
 
-    def _get_unsent_result_tuples(self) -> List[tuple]:
+    def _get_unsent_result_dicts(self) -> List[tuple]:
         try:
             with self.engine.connect() as conn:
                 result = conn.execute(
@@ -189,20 +189,45 @@ class SQLAlchemyDataset(SurveyDataset):
                     out.append(r._asdict())
                 return out
         except SQLAlchemyError as e:
-            
             raise DatasetError("Unable to perform dataset operation", e)
 
-    def update_first_attempt(self, recipient_id: int, sucess: bool):
+    def _update_attempt(self, recipient_id: int, update_field: str, success: bool):
+        try:
+            with self.engine.connect() as conn:
+                conn.execute(
+                    f"""
+                        UPDATE 
+                            answers3
+                        SET 
+                            {update_field} = datetime('now')
+                        WHERE 
+                            respondentid = {recipient_id}
+                    """
+                )
+        except SQLAlchemyError as e:
+            raise DatasetError("Unable to perform dataset operation", e)
+
+    def update_first_attempt(self, recipient_id: int, success: bool):
         """
         Updates the date of succesul or fail attempt to send a first email
         """
+        update_field = "strategi_mail_send_first"
+        if not success:
+            update_field = "strategi_mail_send_first_failed"
+        self._update_attempt(recipient_id, update_field, success)
 
-    def update_second_attempt(self, recipient_id: int, sucess: bool):
+    def update_second_attempt(self, recipient_id: int, success: bool):
         """
         Updates the date of succesul or fail attempt to send a second email
         """
+        update_field = "strategi_mail_send_second"
+        if not success:
+            update_field = "strategi_mail_send_second_failed"
+        self._update_attempt(recipient_id, update_field, success)
 
 if __name__ == "__main__":
-    db_url = 'sqlite:///env/unittest.sqlite3'
+    db_url = 'sqlite:///test/data/mismatch_testdb.sqlite3'
     db = SQLAlchemyDataset(db_url)
-    print(db.get_unsent_survey_results())
+    print(db._get_unsent_result_dicts()[0])
+    #print(db.get_unsent_survey_results())
+    
