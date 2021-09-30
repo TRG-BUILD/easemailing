@@ -1,23 +1,63 @@
 import sqlite3
+from dataclasses import dataclass
+from typing import List
 from abc import ABC, abstractmethod
+from sqlalchemy import create_engine
+from sqlalchemy.exc import SQLAlchemyError
 
+
+@dataclass
+class SurveyResult:
+    """
+    Class that all the extracted data will be formated to
+    """
+    recipient_id: int
+    recipient_email: int
+    days_since: int = 0
+    situations: tuple = ()
+    responses: tuple = ()
+    additional: tuple = ()
+    situation_tag: str = "situation_{}"
+    response_tag: str = "response_{}"
+    additional_tag: str = "additional_{}"
+
+    def _get_dict(self, content: tuple, tags_rule: str):
+        """
+        Returns formatted content for easier subtitution into tagged text
+        {tag1: content1, tag2: content2, ...}
+        """
+        result = {}
+        for i, c in enumerate(content):
+            key = tags_rule.format(i)
+            result[key] = c
+        return result       
+
+    def get_situation_dict(self):
+        return self._get_dict(self.situations, self.situation_tag)   
+    
+    def get_response_dict(self):
+        return self._get_dict(self.responses, self.response_tag)
+
+    def get_additional_dict(self):
+        return self._get_dict(self.additional, self.additional_tag)
+
+    def get_dict(self):
+        result = {}
+        result.update(self.get_situation_dict())
+        result.update(self.get_response_dict())
+        result.update(self.get_additional_dict())
+        return result
 
 class DatasetError(Exception):
     pass
 
+
 class SurveyDataset(ABC):
     @abstractmethod
-    def get_first_attempt_mailing(self) -> list:
+    def get_unsent_survey_results(self) -> List[SurveyResult]:
         """
         Returns emails of recipients that want email strategy,
         a reminder and have not received mail before
-        """
-
-    @abstractmethod
-    def get_second_attempt_mailing(self) -> list:
-        """
-        Returns emails of recipients that want email strategy,
-        a reminder and have already received first mail
         """
 
     @abstractmethod
@@ -40,7 +80,7 @@ class LocalSQLiteDataset(SurveyDataset):
     def __init__(self, db):
         self.db = db
 
-    def get_first_attempt_mailing(self):
+    def get_unsent_survey_results(self):
         try:
             conn = sqlite3.connect(self.db)
             cursor = conn.cursor()
@@ -48,16 +88,16 @@ class LocalSQLiteDataset(SurveyDataset):
                 """
                 SELECT
                     respondentid,
-                    days_since,
-                    closetime,
-                    today,
+                    days_since_done,
+                    email_strategi,
+                    strategi_mail_send_first,
+                    strategi_mail_send_second,
                     situation1_text,
                     situation2_text,
                     situation3_text,
                     strategi1_text,
                     strategi2_text,
-                    strategi3_text,
-                    email_strategi
+                    strategi3_text
                 FROM
                     strategi_mailings
                 """
@@ -71,13 +111,6 @@ class LocalSQLiteDataset(SurveyDataset):
         finally:
             if conn:
                 conn.close()
-
-    def get_second_attempt_mailing(self) -> list:
-        """
-        Returns emails of recipients that want email strategy,
-        a reminder and have already received first mail
-        """
-        return []
 
     def update_first_attempt(self, recipient_id: int, sucess: bool):
         """
@@ -104,42 +137,72 @@ class LocalSQLiteDataset(SurveyDataset):
         pass
 
 
+class SQLAlchemyDataset(SurveyDataset):
+    """
+    Flexible database input based on the URL:
+    https://docs.sqlalchemy.org/en/14/core/engines.html
+    """
+    def __init__(self, db_url: str):
+        self.db_url = db_url
+        self.engine = create_engine(self.db_url)
+
+    def get_unsent_survey_results(self) -> List[SurveyResult]:
+        result_tuples = self._get_unsent_result_tuples()
+        return self._format_result_tuples(result_tuples) 
+
+    def _format_result_tuples(self, result_tuples: List[tuple]) -> List[SurveyResult]:
+        formatted = []
+        for r in result_tuples:
+            sr = SurveyResult(
+                recipient_id=r["respondentid"],
+                recipient_email=r["email_strategi"],
+                days_since=r["days_since_done"],
+                situations=tuple([v for k, v in r.items() if k.startswith("situation")]),
+                responses=tuple([v for k, v in r.items() if k.startswith("strategi")])
+            )
+            formatted.append(sr)
+        return formatted
+
+    def _get_unsent_result_tuples(self) -> List[tuple]:
+        try:
+            with self.engine.connect() as conn:
+                result = conn.execute(
+                    """
+                    SELECT
+                        respondentid,
+                        days_since_done,
+                        email_strategi,
+                        strategi_mail_send_first,
+                        strategi_mail_send_second,
+                        situation1_text,
+                        situation2_text,
+                        situation3_text,
+                        strategi1_text,
+                        strategi2_text,
+                        strategi3_text
+                    FROM
+                        strategi_mailings
+                    """
+                )
+                out = []
+                for r in result:
+                    out.append(r._asdict())
+                return out
+        except SQLAlchemyError as e:
+            
+            raise DatasetError("Unable to perform dataset operation", e)
+
+    def update_first_attempt(self, recipient_id: int, sucess: bool):
+        """
+        Updates the date of succesul or fail attempt to send a first email
+        """
+
+    def update_second_attempt(self, recipient_id: int, sucess: bool):
+        """
+        Updates the date of succesul or fail attempt to send a second email
+        """
+
 if __name__ == "__main__":
-    test_db = "env/testdb.sqlite3"
-    sqlm = LocalSQLiteDataset(test_db)
-    print(sqlm.get_first_attempt_mailing())
-
-
-"""
-DROP VIEW strategi_mailings;
-
-CREATE VIEW strategi_mailings
-as
-SELECT
-    respondentid,
-    julianday(datetime('now'))-julianday(closetime) as days_since_done,
-    closetime,
-    datetime('now') as today,
-    l1.field_text as situation1_text,
-    l2.field_text as situation2_text,
-    l3.field_text as situation3_text,
-    ls1.field_text as strategi1_text,
-    ls2.field_text as strategi2_text,
-    ls3.field_text as strategi3_text,
-    email_strategi,
-    strategi_mail_send_first,
-    strategi_mail_send_second 
-from
-    answers3 a
-    LEFT JOIN labels l1 on (a.situation1 = l1.field_value and l1.field_name = 'situation1')
-    LEFT JOIN labels l2 on (a.situation2 = l2.field_value and l2.field_name = 'situation2')
-    LEFT JOIN labels l3 on (a.situation3 = l3.field_value and l3.field_name = 'situation3')
-    LEFT JOIN labels ls1 on (a.strategi1 = ls1.field_value and ls1.field_name = 'strategi1')
-    LEFT JOIN labels ls2 on (a.strategi2 = ls2.field_value and ls2.field_name = 'strategi2')
-    LEFT JOIN labels ls3 on (a.strategi3 = ls3.field_value and ls3.field_name = 'strategi3')
-where
-    strategimail = 1 AND
-    strategireminder = 1 AND
-    (strategi_mail_send_first is null OR strategi_mail_send_second is null)
-;
-"""
+    db_url = 'sqlite:///env/unittest.sqlite3'
+    db = SQLAlchemyDataset(db_url)
+    print(db.get_unsent_survey_results())
