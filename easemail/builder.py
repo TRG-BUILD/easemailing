@@ -6,6 +6,11 @@ from string import Template
 from bs4 import BeautifulSoup
 from easemail.datasets import SurveyResult
 
+
+class IncorrectTemplate(Exception):
+    pass
+
+
 class SurveyEmailBuilder(ABC):
     """
     builder for EmailMessage objects
@@ -31,7 +36,10 @@ class TextSurveyEmailBuilder(SurveyEmailBuilder):
         Find text template tags present in data and substitute them with data
         """
         data = survey.get_dict()
-        return self.text_template.safe_substitute(**data)
+        try:
+            return self.text_template.substitute(**data)
+        except KeyError as e:
+            raise IncorrectTemplate("Template has unused tags! ", e)
 
     def _build_text_message(self, recipient: str, subject: str, body: str) -> EmailMessage:
         msg = EmailMessage()
@@ -60,11 +68,15 @@ class HTMLSurveyEmailBuilder(SurveyEmailBuilder):
         Find html template ids present in data and substitute them with data
         """
         data = survey.get_dict()
-
+        
         soup = BeautifulSoup(self.html_template, 'html.parser')
-        for key, text in data.items():
-            if elem := soup.find(id=key):
-                elem.string.replace_with(text)
+        found_keys = []
+        for key, new_text in data.items():
+            elem = soup.find(id=key)
+            if elem:
+                elem.string = new_text
+                found_keys.append(key)
+
         return str(soup)
 
     def _build_html_message(self, recipient: str, subject: str, html_body: str) -> EmailMessage:
@@ -82,3 +94,27 @@ class HTMLSurveyEmailBuilder(SurveyEmailBuilder):
         html_body = self._insert_to_html(survey)
         recipient = survey.recipient_email
         return self._build_html_message(recipient, subject, html_body)
+
+
+def main():
+    path = os.path.join("email_templates", "email_template.html")
+    if not os.path.exists(path):
+        raise FileExistsError
+
+    builder = HTMLSurveyEmailBuilder(
+        open(path, "r").read(),
+        "sender@mailcom",
+        "from main"
+        )
+    
+    s = SurveyResult(
+        0, "recipient@mailcom", 0,
+        situations=("s0", "s1", "s2"),
+        responses=("r0", "r1", "r2")
+        )
+    txt = builder._insert_to_html(s)
+    with open("out.html", "w") as fout:
+        fout.write(txt)
+
+if __name__ == "__main__":
+    main()

@@ -30,7 +30,7 @@ class SurveyResult:
         for i, c in enumerate(content):
             key = tags_rule.format(i)
             result[key] = c
-        return result       
+        return result
 
     def get_situation_dict(self):
         return self._get_dict(self.situations, self.situation_tag)   

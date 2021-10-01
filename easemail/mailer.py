@@ -8,7 +8,7 @@ class MailingError(Exception):
 
 
 class EmailSender:
-    def __init__(self, user: str, password: str, server:str, tls_port: int = 587, debug_port: int=1025):
+    def __init__(self, user: str, password: str, server:str, tls_port: int=587, debug_port: int=1025):
         self.user = user
         self.password = password
         self.server = server

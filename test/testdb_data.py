@@ -1,8 +1,6 @@
 from datetime import datetime, timedelta
 from easemail.datasets import SurveyResult
-# function to generate database
 
-# function for expected output of the tuples
 
 def get_days_since_done(date_str: str, fmt: str='%Y-%m-%d %H:%M:%S'):
     today = datetime.now() - datetime.strptime(date_str, fmt)

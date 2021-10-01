@@ -81,7 +81,7 @@ For the html files the element ids `id=situation_0` are searched with a tag rule
 </table>
 ```
 ### Correct tag rules for the plane text files
-For the plane text files the element prefixed with `$` as `$situation_0` are searched with a tag rule for and substituted with the content of `SurveyResult` object.
+For the plane text files the element prefixed with `$` as `$situation_0` or `${situation_0}` are searched with a tag rule for and substituted with the content of `SurveyResult` object.
 ```
 Hvis jeg bliver fristet til/kommer til at køre for hurtigt...
 Så vil jeg minde mig selv om...

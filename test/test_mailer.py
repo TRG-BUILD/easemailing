@@ -5,16 +5,6 @@ from email.message import EmailMessage
 
 from easemail.mailer import EmailSender
 
-def get_secret():
-    """Simple retrieval function.
-    Returns SECRET or raises OSError.
-    """
-    secret = os.getenv('SECRET', default=None)
-
-    if secret is None:
-        raise OSError("SECRET environment is not set.")
-
-    return secret
 
 def create_email(sender: str, reciever: str):
     msg = EmailMessage()
