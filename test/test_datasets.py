@@ -95,14 +95,6 @@ class TestSQLAlchemyMatchingDataset(unittest.TestCase):
         unsent_recipients = [r.recipient_id for r in results]
         self.assertNotIn(recipient_id, unsent_recipients)
 
-    """
-    def test_update_first_attempt_failed_mail(self):
-        db = SQLAlchemyDataset(self.updateable_db_url)
-        self.assertRaises(DatasetError, db.update_first_attempt, -1, True)
-
-        # should be able to re-send
-    """
-
 class TestSQLAlchemyMismatchDataset(unittest.TestCase):
     mismatch_db_path = os.path.join(
         os.path.dirname(os.path.realpath(__file__)),

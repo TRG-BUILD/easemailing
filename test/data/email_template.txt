@@ -1,0 +1,16 @@
+Kære deltager i EASE-projektet
+Din strategi til at undgå nye fartbøder er:
+
+Hvis jeg bliver fristet til/kommer til at køre for hurtigt...
+Så vil jeg minde mig selv om...
+
+Hvis du har skrevet yderligere ting til din personlige strategi, vil de fremgå herunder:
+
+| $situation_0 | $response_0 |
+| $situation_1 | $response_1 |
+| $situation_2 | $response_2 |
+
+Venlig hilsen
+EASE projektgruppen
+
+Ønsker du ikke længere besked fra os "https://ease.aau.dk/afmeld?email="
