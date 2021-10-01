@@ -1,56 +1,84 @@
 import os
-import datapipelines
-import mailer
-from logger import Logger
+from easemail import datasets, builder, logger, mailer
+
+
+TEMPLATE_DIR = "email_templates"
+
+
+def get_email_template(name: str):
+    """
+    Load test templates
+    """
+    path = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)),
+        TEMPLATE_DIR,
+        name
+    )
+    if os.path.exists(path):
+        with open(path, "r") as fin:
+            return fin.read()
+    else:
+        raise FileExistsError("File does not exist: ", path)
+
 
 def first_attempt_job(
-    datapipeline: datapipelines.Pipeline,
-    email_builder: mailer.SurveyEmailBuilder,
-    mailer: mailer.EmailSender,
-    local_logger: Logger
+    jdataset: datasets.SurveyDataset,
+    jbuilder: builder.SurveyEmailBuilder,
+    jmailer: mailer.EmailSender,
+    jlogger: logger.Logger
     ):
     """
     proceed first reminder
     """
-    survey_results = datapipeline.get_first_attempt_mailing()
-
-    for survey in survey_results:
-        if survey.days_since >= 7: # hardcoded crap
-            email = email_builder.build(survey)
-            success = mailer.send(email, debug_mode=True)
-
-            if success:
-                local_logger.log_email_pass(survey.recipient_id, 1)
-            else:
-                local_logger.log_email_fail(survey.recipient_id, 1)
-
-            datapipeline.update_first_attempt(survey.recipient_id, success)
+    survey_results = jdataset.get_unsent_survey_results()
+    emails_to_send = [jbuilder.build(s) for s in survey_results if s.days_since_done >= 7]
+    jmailer.send(emails_to_send, debug_mode=True)
+"""    for email :
+        try:
+            
+            #jlogger.log_email_pass(survey.recipient_id, 1)
+        except mailer.MailingError:
+            print("CRUSH!")
+            #jlogger.log_email_fail(survey.recipient_id, 1)
+            
+            #jdataset.update_first_attempt(survey.recipient_id, success=False)     """       
 
 
 if __name__ == "__main__":
     ### config part
-    db_path = os.path.join("env", "testdb.sqlite3")
-    html_template_path = os.path.join(
-        os.path.dirname(os.path.abspath(__file__)),
-        "email_template.html")
+    db_path = os.path.join("env", "matching_testdb.sqlite3")
+    db_url = f'sqlite:///{db_path}'
+
+    html_template = get_email_template("email_template.html")
+    text_template = get_email_template("email_template.txt")
+
     subject = "Projekt EASE - din egen strategi"
-    with open(html_template_path, "r") as fin:
-        html_template = fin.read()
 
     email_sender = os.environ.get('EMAIL_USER')
     email_pass = os.environ.get('EMAIL_PASS')
     server = 'smtp.aau.dk'
     
-    # extraction from DB
-    datapipeline = datapipelines.LocalSQLPipeline(db_path)
-    
-    email_builder = mailer.HTMLSurveyEmailBuilder(
-        email_sender, html_template, subject)
-    sender = mailer.EmailSender(
-        email_sender, email_pass, server)
+    jdataset = datasets.SQLAlchemyDataset(db_url)
 
-    local_logger = Logger(
+    jbuilder = builder.HTMLSurveyEmailBuilder(
+        html_template,
+        email_sender,
+        subject
+    )
+    jbuilder = builder.TextSurveyEmailBuilder(
+        text_template,
+        email_sender,
+        subject
+    )
+
+    jmailer = mailer.EmailSender(
+        email_sender,
+        email_pass,
+        server
+    )
+
+    jlogger = logger.Logger(
         log_name="job_log",
         log_directory="env"
     )
-    first_attempt_job(datapipeline, email_builder, sender, local_logger)
+    first_attempt_job(jdataset, jbuilder, jmailer, jlogger)

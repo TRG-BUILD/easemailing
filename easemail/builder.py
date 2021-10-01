@@ -113,8 +113,6 @@ def main():
         responses=("r0", "r1", "r2")
         )
     txt = builder._insert_to_html(s)
-    with open("out.html", "w") as fout:
-        fout.write(txt)
 
 if __name__ == "__main__":
     main()
