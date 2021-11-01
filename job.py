@@ -25,23 +25,28 @@ def first_attempt_job(
     jdataset: datasets.SurveyDataset,
     jbuilder: builder.SurveyEmailBuilder,
     jmailer: mailer.EmailSender,
-    jlogger: logger.Logger
-    ):
+    jlogger: logger.Logger,
+    debug_mode=True):
     """
     proceed first reminder
     """
     survey_results = jdataset.get_unsent_survey_results()
-    emails_to_send = [jbuilder.build(s) for s in survey_results if s.days_since_done >= 7]
-    jmailer.send(emails_to_send, debug_mode=True)
-"""    for email :
+    
+    surveys_to_process = [s for s in survey_results if s.days_since_done >= 7]
+    emails_to_send = [jbuilder.build(s) for s in surveys_to_process]
+
+    for email, survey in zip(emails_to_send, surveys_to_process):
         try:
-            
-            #jlogger.log_email_pass(survey.recipient_id, 1)
+            jmailer.send([email], debug_mode)
+            jlogger.log_email_pass(survey.recipient_id, 1)
+
+            print("LOG_TO_DB_PASS")
+            #jdataset.update_first_attempt(survey.recipient_id, success=False) 
         except mailer.MailingError:
             print("CRUSH!")
-            #jlogger.log_email_fail(survey.recipient_id, 1)
-            
-            #jdataset.update_first_attempt(survey.recipient_id, success=False)     """       
+            jlogger.log_email_fail(survey.recipient_id, 1)
+            print("LOG_TO_DB_TRUE")
+            #jdataset.update_first_attempt(survey.recipient_id, success=False) 
 
 
 if __name__ == "__main__":
@@ -81,4 +86,6 @@ if __name__ == "__main__":
         log_name="job_log",
         log_directory="env"
     )
-    first_attempt_job(jdataset, jbuilder, jmailer, jlogger)
+
+    debug_mode=True
+    first_attempt_job(jdataset, jbuilder, jmailer, jlogger, debug_mode)

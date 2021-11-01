@@ -2,7 +2,6 @@ import os
 import unittest
 from email.message import EmailMessage
 
-from bs4 import BeautifulSoup
 from easemail.datasets import SurveyResult
 from easemail.builder import HTMLSurveyEmailBuilder, TextSurveyEmailBuilder, IncorrectTemplate
 

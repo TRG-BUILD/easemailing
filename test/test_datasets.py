@@ -4,7 +4,14 @@ import shutil
 
 from easemail.datasets import DatasetError, SQLAlchemyDataset, SurveyResult 
 import testdb_data
+import testdb_build
 
+def get_data_path(filename: str):
+    return os.path.join(
+        os.path.dirname(os.path.realpath(__file__)),
+        "data",
+        filename
+    )
 
 class TestSurveyResults(unittest.TestCase):
     situations = ("1","2")
@@ -31,24 +38,22 @@ class TestSurveyResults(unittest.TestCase):
 
 class TestSQLAlchemyMatchingDataset(unittest.TestCase):
     data_generator = testdb_data.SQLAlchemyTestData()
-    matching_db_path = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)),
-        "data",
-        "matching_testdb.sqlite3"
-    )
-    updateable_db_path = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)),
-        "data",
-        "updateable_testdb.sqlite3"
-    )
+
+    matching_db_sql = get_data_path("build_matching_testdb.sql")
+    matching_db_path = get_data_path("matching_testdb.sqlite3")
     matching_db_url = f'sqlite:///{matching_db_path}'
-    updateable_db_url = f'sqlite:///{updateable_db_path}'
 
     def setUp(self):
-        shutil.copyfile(self.matching_db_path, self.updateable_db_path)
+        """
+        Build DB from .sql file
+        """
+        testdb_build.build_testdb_snapshot(self.matching_db_path, self.matching_db_sql)
 
     def tearDown(self):
-        os.remove(self.updateable_db_path)
+        """
+        Delete DB file
+        """
+        testdb_build.delete_testdb_snapshot(self.matching_db_path)
 
     def test_exception_on_incorrect_db_url(self):
         wrong_db_url = f'sqlite:///data/wrong.db'
@@ -85,7 +90,7 @@ class TestSQLAlchemyMatchingDataset(unittest.TestCase):
         self.assertIsInstance(results[0], SurveyResult)
 
     def test_update_double_attempt_successful_email_removes_users(self):
-        db = SQLAlchemyDataset(self.updateable_db_url)
+        db = SQLAlchemyDataset(self.matching_db_url)
         recipient_id=827280790
         db.update_first_attempt(recipient_id, success=True)
         db.update_second_attempt(recipient_id, success=True)
@@ -96,12 +101,21 @@ class TestSQLAlchemyMatchingDataset(unittest.TestCase):
         self.assertNotIn(recipient_id, unsent_recipients)
 
 class TestSQLAlchemyMismatchDataset(unittest.TestCase):
-    mismatch_db_path = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)),
-        "data",
-        "mismatch_testdb.sqlite3"
-    )
-    mismatch_db_url = f'sqlite:///{os.path.join(mismatch_db_path)}'
+    mismatch_db_sql = get_data_path("build_mismatch_testdb.sql")
+    mismatch_db_path = get_data_path("mismatch_testdb.sqlite3")
+    mismatch_db_url = f'sqlite:///{mismatch_db_path}'
+
+    def setUp(self):
+        """
+        Build DB from .sql file
+        """
+        testdb_build.build_testdb_snapshot(self.mismatch_db_path, self.mismatch_db_sql)
+
+    def tearDown(self):
+        """
+        Delete DB file
+        """
+        testdb_build.delete_testdb_snapshot(self.mismatch_db_path)
 
     def test_get_unsent_survey_results_raises_on_incorrect_schema(self):
         db = SQLAlchemyDataset(self.mismatch_db_url)

@@ -17,7 +17,7 @@ class EmailSender:
 
     def _send_tls(self, messages: List[EmailMessage]) -> bool:
         """
-        Sends one EmailMessage object via TLS
+        Sends a list of EmailMessage objects via TLS
         """
         try:
             with smtplib.SMTP(self.server, self.tls_port) as smtp:
@@ -33,7 +33,7 @@ class EmailSender:
 
     def _send_debug(self, messages: List[EmailMessage]):
         """
-        sends email to localhost SMTP DebuggingServer for local testing
+        Sends a list of emails to localhost SMTP DebuggingServer for local testing
         start server with:
         python -m smtpd -c DebuggingServer -n localhost:1025 
         """
@@ -46,7 +46,7 @@ class EmailSender:
 
     def send(self, messages: List[EmailMessage], debug_mode=False):
         """
-        Sends an email in either TLS mode ore debug
+        Sends a list of emails in either TLS mode ore debug
         """
         if not isinstance(messages, list):
             raise ValueError("Expected list of email.message.EmailMessage")
