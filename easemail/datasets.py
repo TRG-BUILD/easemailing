@@ -61,15 +61,9 @@ class SurveyDataset(ABC):
         """
 
     @abstractmethod
-    def update_first_attempt(self, recipient_id: int, success: bool):
+    def update_attempt(self, attempt_number: int, recipient_id: int, success: bool):
         """
-        Updates the date of succesul or fail attempt to send a first email
-        """
-
-    @abstractmethod
-    def update_second_attempt(self, recipient_id: int, success: bool):
-        """
-        Updates the date of succesul or fail attempt to send a second email
+        Updates the date of succesul or fail attempt to send an email
         """
 
 
@@ -127,7 +121,7 @@ class SQLAlchemyDataset(SurveyDataset):
         except SQLAlchemyError as e:
             raise DatasetError("Unable to perform dataset operation", e)
 
-    def _update_attempt(self, recipient_id: int, update_field: str, success: bool):
+    def _update_attempt_by_field(self, recipient_id: int, update_field: str):
         try:
             with self.engine.connect() as conn:
                 conn.execute(
@@ -143,23 +137,15 @@ class SQLAlchemyDataset(SurveyDataset):
         except SQLAlchemyError as e:
             raise DatasetError("Unable to perform dataset operation", e)
 
-    def update_first_attempt(self, recipient_id: int, success: bool):
-        """
-        Updates the date of succesul or fail attempt to send a first email
-        """
-        update_field = "strategi_mail_send_first"
+    def update_attempt(self, attempt_number: int, recipient_id: int, success: bool):
+        attempt_map = {
+            1: "_first",
+            2: "_second"
+        }
+        update_field = "strategi_mail_send" + attempt_map[attempt_number]
         if not success:
-            update_field = "strategi_mail_send_first_failed"
-        self._update_attempt(recipient_id, update_field, success)
-
-    def update_second_attempt(self, recipient_id: int, success: bool):
-        """
-        Updates the date of succesul or fail attempt to send a second email
-        """
-        update_field = "strategi_mail_send_second"
-        if not success:
-            update_field = "strategi_mail_send_second_failed"
-        self._update_attempt(recipient_id, update_field, success)
+            update_field += "_failed"
+        self._update_attempt_by_field(recipient_id, update_field)
 
 if __name__ == "__main__":
     db_url = 'sqlite:///test/data/mismatch_testdb.sqlite3'

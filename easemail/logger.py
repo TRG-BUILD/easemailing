@@ -6,10 +6,12 @@ class Logger():
     """
     Logger object to capture db failures and mailing failures locally
     """
-    def __init__(self, log_name: str, log_directory: str, extension: str="csv"):
+    def __init__(self, log_name: str, log_directory: str, extension: str="csv", delimiter: str="\t"):
         self.log_name = log_name
+        self.extension = extension
+        self.delimiter = delimiter
 
-        if log_directory is None:
+        if not log_directory:
             log_directory = os.getcwd()
         else:
             os.makedirs(log_directory, exist_ok=True)
@@ -28,7 +30,7 @@ class Logger():
         logger.setLevel(logging.DEBUG)
 
         formatter = logging.Formatter(
-            "%(asctime)s\t%(levelname)s\t%(message)s",
+            f"%(asctime)s{self.delimiter}%(levelname)s{self.delimiter}%(message)s",
             "%Y-%m-%d %H:%M:%S")
         
         if len(logger.handlers) == 0:
@@ -42,10 +44,10 @@ class Logger():
         self.logger.error("DB_FAIL")
 
     def log_email_fail(self, recipient_id: int, attempt_no: int):
-        self.logger.error("EMAIL_FAIL\t{}\t{}".format(recipient_id, attempt_no))
+        self.logger.error(f"EMAIL_FAIL{self.delimiter}{recipient_id}{self.delimiter}{attempt_no}")
 
     def log_email_pass(self, recipient_id: int, attempt_no: int):
-        self.logger.info("EMAIL_PASS\t{}\t{}".format(recipient_id, attempt_no))
+        self.logger.info(f"EMAIL_PASS{self.delimiter}{recipient_id}{self.delimiter}{attempt_no}")
 
 
 if __name__ == "__main__":
