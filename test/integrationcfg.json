@@ -1,0 +1,11 @@
+{
+    "email_subject": "Projekt EASE - din egen strategi",
+    "email_server": "smtp.aau.dk",
+    "email_type": "html",
+    "email_template": "email_template.html",
+    "email_template_dir": "email_templates",
+    "email_in_debug_mode": true,
+    "survey_db_url": "",
+    "log_name": "integration_log",
+    "log_dir": ""
+}

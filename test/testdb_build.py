@@ -17,12 +17,12 @@ def get_build_query_from_file(filename: str) -> str:
         raise FileExistsError("File does not exist: ", path)
 
 
-def build_testdb_snapshot(db_url: str, sql_filename: str) -> None:
+def build_testdb_snapshot(db_path: str, sql_filename: str) -> None:
     """
     Rebuild *.sqlite3 database from *.sql file
     """
     build_string = get_build_query_from_file(sql_filename)
-    with sqlite3.connect(db_url) as conn:
+    with sqlite3.connect(db_path) as conn:
         conn.executescript(build_string)
 
 def delete_testdb_snapshot(db_path: str):
