@@ -1,11 +1,10 @@
 import os
-import json
-
+import csv
 
 from easemail import datasets, builder, logger, mailer
 import job
-
 import testdb_build
+
 
 def get_data_path(filename: str):
     return os.path.join(
@@ -14,16 +13,16 @@ def get_data_path(filename: str):
         filename
     )
 
+def assert_log_size(jlogger: logger.Logger, expected_size: int):
+    """
+    Compare the size of the log to the expected size
+    """
+    with open(jlogger.log_path, "r") as csvfile:
+        log_reader = csv.reader(csvfile, delimiter=jlogger.delimiter)
+        assert len([row for row in log_reader]) == expected_size
 
-if __name__ == "__main__":
-    ### Create database
-    db_sql = get_data_path("build_matching_testdb.sql")
-    db_path = get_data_path("matching_testdb.sqlite3")
-    db_url = f'sqlite:///{db_path}'
-    testdb_build.build_testdb_snapshot(db_path, db_sql)
-
-    ### config part
-    cfg = job.read_job_config("integrationcfg.json")
+def main(config: str):
+    cfg = job.read_job_config(config)
     
     subject = cfg["email_subject"]
     email_sender = cfg["email_sender"]
@@ -33,7 +32,7 @@ if __name__ == "__main__":
     email_template = job.get_email_template(
         cfg["email_template"],
         cfg["email_template_dir"])
-    survey_db_url = db_url
+    survey_db_url = cfg["survey_db_url"]
     email_in_debug_mode = cfg["email_in_debug_mode"]
     log_name = cfg["log_name"]
     log_folder = cfg["log_dir"]
@@ -66,7 +65,7 @@ if __name__ == "__main__":
     jlogger = logger.Logger(log_name, log_folder)
 
     # run job
-    job.first_attempt_job(
+    job.send_reminders(1, 7,
         jdataset,
         jbuilder,
         jmailer,
@@ -74,4 +73,30 @@ if __name__ == "__main__":
         email_in_debug_mode
     )
 
-    testdb_build.delete_testdb_snapshot(db_path)
+    job.send_reminders(2, 45,
+        jdataset,
+        jbuilder,
+        jmailer,
+        jlogger, 
+        email_in_debug_mode
+    )
+
+    # tests
+    assert len(jdataset.get_unsent_survey_results()) == 0
+    assert_log_size(jlogger, expected_size=8)
+
+if __name__ == "__main__":
+    ### Create database
+    config = "integrationcfg.json"
+    db_sql = get_data_path("build_matching_testdb.sql")
+    db_path = get_data_path("matching_testdb.sqlite3")
+    log_path = "integration_log.csv"
+
+    try:
+        testdb_build.build_testdb_snapshot(db_path, db_sql)
+        main(config)
+    except Exception as e:
+        raise e
+    finally:
+        os.remove(log_path)
+        testdb_build.delete_testdb_snapshot(db_path)

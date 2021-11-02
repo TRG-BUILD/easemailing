@@ -89,16 +89,21 @@ class TestSQLAlchemyMatchingDataset(unittest.TestCase):
         self.assertTrue(len(results), 4)
         self.assertIsInstance(results[0], SurveyResult)
 
+    def test_update_attempt_fails_on_incorrect_attempt_number(self):
+        db = SQLAlchemyDataset(self.matching_db_url)
+        r_id=827280790
+        self.assertRaises(Exception, db.update_attempt, attempt_number=0, recipient_id=r_id, success=True)
+
     def test_update_double_attempt_successful_email_removes_users(self):
         db = SQLAlchemyDataset(self.matching_db_url)
-        recipient_id=827280790
-        db.update_first_attempt(recipient_id, success=True)
-        db.update_second_attempt(recipient_id, success=True)
+        r_id=827280790
+        db.update_attempt(attempt_number=1, recipient_id=r_id, success=True)
+        db.update_attempt(attempt_number=2, recipient_id=r_id, success=True)
 
         # should not be able to re-send to this id anymore
         results = db.get_unsent_survey_results()
         unsent_recipients = [r.recipient_id for r in results]
-        self.assertNotIn(recipient_id, unsent_recipients)
+        self.assertNotIn(r_id, unsent_recipients)
 
 class TestSQLAlchemyMismatchDataset(unittest.TestCase):
     mismatch_db_sql = get_data_path("build_mismatch_testdb.sql")
