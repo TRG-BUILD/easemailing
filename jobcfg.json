@@ -4,8 +4,8 @@
     "email_type": "html",
     "email_template": "email_template.html",
     "email_template_dir": "email_templates",
-    "email_in_debug_mode": true,
-    "survey_db_url": "sqlite:///env/matching_testdb.sqlite3",
+    "email_in_debug_mode": false,
+    "survey_db_url": "sqlite:///env/matching_testdb_real_emails.sqlite3",
     "log_name": "job_log",
     "log_dir": "env"
 }

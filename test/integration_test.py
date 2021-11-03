@@ -1,5 +1,6 @@
 import os
 import csv
+import argparse
 
 from easemail import datasets, builder, logger, mailer
 import job
@@ -86,17 +87,30 @@ def main(config: str):
     assert_log_size(jlogger, expected_size=8)
 
 if __name__ == "__main__":
+    ap = argparse.ArgumentParser()
+    ap.add_argument("-c", "--config", default="integrationcfg.json", type=str, help=
+        "configuration file")
+    ap.add_argument("-s", "--sql", default="build_matching_testdb.sql", type=str, help=
+        "name of the .sql file to rebuild the database")
+    ap.add_argument("-l", "--log", default="integration_log.csv", type=str, help=
+        "name of the .csv log file: integration_log.csv by default")
+    ap.add_argument("-d", "--debug-log", default="smtp.log", type=str, help=
+        "name of the debug smpt server log: smtp.log by default.")
+    args = ap.parse_args()
     ### Create database
-    config = "integrationcfg.json"
-    db_sql = get_data_path("build_matching_testdb.sql")
-    db_path = get_data_path("matching_testdb.sqlite3")
-    log_path = "integration_log.csv"
+
+
+    db_sql = get_data_path(args.sql)
+    db_name = args.sql.replace("build_", "").replace("sql", "sqlite3")
+    db_path = get_data_path(db_name)
 
     try:
         testdb_build.build_testdb_snapshot(db_path, db_sql)
-        main(config)
+        main(args.config)
     except Exception as e:
         raise e
     finally:
-        os.remove(log_path)
+        # cleanup logs and db
+        os.remove(args.log)
+        os.remove(args.debug_log)
         testdb_build.delete_testdb_snapshot(db_path)

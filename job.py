@@ -1,5 +1,7 @@
 import os
 import json
+import argparse
+
 from easemail import datasets, builder, logger, mailer
 
 
@@ -60,11 +62,10 @@ def send_reminders(
                 jlogger.log_email_fail(survey.recipient_id, attempt_no)
             jdataset.update_attempt(attempt_no, survey.recipient_id, success=False)
 
-
-if __name__ == "__main__":
-    ### config part
-    cfg = read_job_config("jobcfg.json")
-    
+def main(cfg: dict):
+    """
+    Run mailing pipeline
+    """
     subject = cfg["email_subject"]
     email_sender = cfg["email_sender"]
     email_pass = cfg["email_pass"]
@@ -105,7 +106,7 @@ if __name__ == "__main__":
     # build logger
     jlogger = logger.Logger(log_name, log_folder)
 
-    # run job
+    # run 1st attempt for those with 7+ days
     send_reminders(1, 7,
         jdataset,
         jbuilder,
@@ -114,10 +115,21 @@ if __name__ == "__main__":
         email_in_debug_mode
     )
 
+    # run 2nd attempt for those with 45+ days
     send_reminders(2, 45,
         jdataset,
         jbuilder,
         jmailer,
         jlogger, 
         email_in_debug_mode
-    )
+    )    
+
+if __name__ == "__main__":
+    ag = argparse.ArgumentParser()
+    ag.add_argument("-c", "--config", required=True, type=str, help=
+        "mailer job configuration file")
+    args = ag.parse_args()
+    ### config part
+    cfg = read_job_config(args.config)
+    main(cfg)
+    
