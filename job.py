@@ -11,13 +11,13 @@ def read_job_config(filename: str) -> dict:
     pass are obtained from environmental variables EMAIL_USER and EMAIL_PASS
     """
     cfg = {
-        "email_sender": os.environ.get('EMAIL_USER'),
         "email_pass": os.environ.get('EMAIL_PASS')
     }
 
     with open(filename, "r") as fin:
         cfg.update(json.load(fin))
     return cfg
+
 
 def get_email_template(name: str, template_dir: str):
     """
@@ -34,20 +34,22 @@ def get_email_template(name: str, template_dir: str):
     else:
         raise FileExistsError("File does not exist: ", path)
 
+
 def send_reminders(
-    attempt_no: int,
-    max_days: int,
-    jdataset: datasets.SurveyDataset,
-    jbuilder: builder.SurveyEmailBuilder,
-    jmailer: mailer.EmailSender,
-    jlogger: logger.Logger=None,
-    debug_mode: bool=True):
+        attempt_no: int,
+        max_days: int,
+        jdataset: datasets.SurveyDataset,
+        jbuilder: builder.SurveyEmailBuilder,
+        jmailer: mailer.EmailSender,
+        jlogger: logger.Logger = None,
+        debug_mode: bool = True):
     """
     Send mail reminder based on the surbey database
     """
     survey_results = jdataset.get_unsent_survey_results()
-    
-    surveys_to_process = [s for s in survey_results if s.days_since_done >= max_days]
+    # TODO: check attempt_no == attempt_no -1
+    surveys_to_process = [s for s in survey_results if
+                          s.days_since_done >= max_days and s.succesfull_attempt == attempt_no - 1]
     emails_to_send = [jbuilder.build(s) for s in surveys_to_process]
 
     for email, survey in zip(emails_to_send, surveys_to_process):
@@ -61,6 +63,7 @@ def send_reminders(
             if jlogger:
                 jlogger.log_email_fail(survey.recipient_id, attempt_no)
             jdataset.update_attempt(attempt_no, survey.recipient_id, success=False)
+
 
 def main(cfg: dict):
     """
@@ -78,10 +81,11 @@ def main(cfg: dict):
     email_in_debug_mode = cfg["email_in_debug_mode"]
     log_name = cfg["log_name"]
     log_folder = cfg["log_dir"]
+    survey_id = cfg["survey_id"]
 
     # build dataset handler
-    jdataset = datasets.SQLAlchemyDataset(survey_db_url)
-    
+    jdataset = datasets.SQLAlchemyDataset(survey_db_url, survey_id)
+
     # build email composer
     if email_type == "html":
         jbuilder = builder.HTMLSurveyEmailBuilder(
@@ -94,13 +98,14 @@ def main(cfg: dict):
             email_template,
             email_sender,
             subject
-    )
+        )
 
     # build mail sender
     jmailer = mailer.EmailSender(
         email_sender,
         email_pass,
-        email_server
+        email_server,
+        tls_port=25
     )
 
     # build logger
@@ -108,28 +113,29 @@ def main(cfg: dict):
 
     # run 1st attempt for those with 7+ days
     send_reminders(1, 7,
-        jdataset,
-        jbuilder,
-        jmailer,
-        jlogger, 
-        email_in_debug_mode
-    )
+                   jdataset,
+                   jbuilder,
+                   jmailer,
+                   jlogger,
+                   email_in_debug_mode
+                   )
 
     # run 2nd attempt for those with 45+ days
     send_reminders(2, 45,
-        jdataset,
-        jbuilder,
-        jmailer,
-        jlogger, 
-        email_in_debug_mode
-    )    
+                   jdataset,
+                   jbuilder,
+                   jmailer,
+                   jlogger,
+                   email_in_debug_mode
+                   )
+
 
 if __name__ == "__main__":
     ag = argparse.ArgumentParser()
     ag.add_argument("-c", "--config", required=True, type=str, help=
-        "mailer job configuration file")
+    "mailer job configuration file")
     args = ag.parse_args()
     ### config part
     cfg = read_job_config(args.config)
     main(cfg)
-    
+

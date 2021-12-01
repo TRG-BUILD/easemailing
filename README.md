@@ -5,7 +5,7 @@
 
 ```sh
 pip install -r requirements.txt
-pip isntall -e .
+pip install -e .
 ```
 
 ## Security
