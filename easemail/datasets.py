@@ -14,6 +14,7 @@ class SurveyResult:
     recipient_id: int
     recipient_email: int
     days_since_done: int = 0
+    succesfull_attempt: int = 0
     situations: tuple = ()
     responses: tuple = ()
     additional: tuple = ()
@@ -33,8 +34,8 @@ class SurveyResult:
         return result
 
     def get_situation_dict(self):
-        return self._get_dict(self.situations, self.situation_tag)   
-    
+        return self._get_dict(self.situations, self.situation_tag)
+
     def get_response_dict(self):
         return self._get_dict(self.responses, self.response_tag)
 
@@ -47,6 +48,7 @@ class SurveyResult:
         result.update(self.get_response_dict())
         result.update(self.get_additional_dict())
         return result
+
 
 class DatasetError(Exception):
     pass
@@ -72,13 +74,15 @@ class SQLAlchemyDataset(SurveyDataset):
     Flexible database input based on the URL:
     https://docs.sqlalchemy.org/en/14/core/engines.html
     """
-    def __init__(self, db_url: str):
+
+    def __init__(self, db_url: str, survey_id: int):
         self.db_url = db_url
         self.engine = create_engine(self.db_url)
+        self.survey_id = survey_id
 
     def get_unsent_survey_results(self) -> List[SurveyResult]:
         result_dicts = self._get_unsent_result_dicts()
-        return self._format_result_dicts(result_dicts) 
+        return self._format_result_dicts(result_dicts)
 
     def _format_result_dicts(self, result_dicts: List[dict]) -> List[SurveyResult]:
         formatted = []
@@ -88,6 +92,7 @@ class SQLAlchemyDataset(SurveyDataset):
                 recipient_email=r["email_strategi"],
                 days_since_done=r["days_since_done"],
                 situations=tuple([v for k, v in r.items() if k.startswith("situation")]),
+                succesfull_attempt=r["succesfull_attempt"],
                 responses=tuple([v for k, v in r.items() if "strategi" in k and "text" in k])
             )
             formatted.append(sr)
@@ -100,6 +105,7 @@ class SQLAlchemyDataset(SurveyDataset):
                     """
                     SELECT
                         respondentid,
+                        succesfull_attempt,
                         days_since_done,
                         email_strategi,
                         strategi_mail_send_first,
@@ -127,11 +133,11 @@ class SQLAlchemyDataset(SurveyDataset):
                 conn.execute(
                     f"""
                         UPDATE 
-                            answers3
+                            answers_{self.survey_id}
                         SET 
-                            {update_field} = datetime('now')
+                            {update_field} = now()
                         WHERE 
-                            respondentid = {recipient_id}
+                            answer_id = {recipient_id}
                     """
                 )
         except SQLAlchemyError as e:
@@ -147,9 +153,10 @@ class SQLAlchemyDataset(SurveyDataset):
             update_field += "_failed"
         self._update_attempt_by_field(recipient_id, update_field)
 
+
 if __name__ == "__main__":
     db_url = 'sqlite:///test/data/mismatch_testdb.sqlite3'
     db = SQLAlchemyDataset(db_url)
     print(db._get_unsent_result_dicts()[0])
-    #print(db.get_unsent_survey_results())
-    
+    # print(db.get_unsent_survey_results())
+

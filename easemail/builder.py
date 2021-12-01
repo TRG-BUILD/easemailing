@@ -15,7 +15,8 @@ class SurveyEmailBuilder(ABC):
     """
     builder for EmailMessage objects
     """
-    def __init__(self, sender: str, subject: str=""):
+
+    def __init__(self, sender: str, subject: str = ""):
         self.sender = sender
         self.subject = subject
 
@@ -68,7 +69,7 @@ class HTMLSurveyEmailBuilder(SurveyEmailBuilder):
         Find html template ids present in data and substitute them with data
         """
         data = survey.get_dict()
-        
+
         soup = BeautifulSoup(self.html_template, 'html.parser')
         found_keys = []
         for key, new_text in data.items():
@@ -105,14 +106,15 @@ def main():
         open(path, "r").read(),
         "sender@mailcom",
         "from main"
-        )
-    
+    )
+
     s = SurveyResult(
         0, "recipient@mailcom", 0,
         situations=("s0", "s1", "s2"),
         responses=("r0", "r1", "r2")
-        )
+    )
     txt = builder._insert_to_html(s)
+
 
 if __name__ == "__main__":
     main()

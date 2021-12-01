@@ -24,7 +24,7 @@ class EmailSender:
                 smtp.ehlo()
                 smtp.starttls()
                 smtp.ehlo()
-                smtp.login(self.user, self.password)
+                #smtp.login(self.user, self.password)
                 for m in messages:
                     smtp.send_message(m)
         except:
@@ -35,7 +35,7 @@ class EmailSender:
         """
         Sends a list of emails to localhost SMTP DebuggingServer for local testing
         start server with:
-        python -m smtpd -c DebuggingServer -n localhost:1025 
+        python -m smtpd -c DebuggingServer -n localhost:1025
         """
         try:
             with smtplib.SMTP('localhost', self.debug_port) as smtp:
@@ -64,4 +64,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    
