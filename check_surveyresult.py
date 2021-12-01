@@ -49,11 +49,14 @@ def main(cfg: dict):
 
 
     print("Recipients 7 days reminder")
+    print("--------------------------")
     # run 1st attempt for those with 7+ days
     check_surveyresult(1, 7,
                    jdataset,
                    )
+    print()
     print("Recipients 45 days reminder")
+    print("---------------------------")
     # run 2nd attempt for those with 45+ days
     check_surveyresult(2, 45,
                    jdataset,
