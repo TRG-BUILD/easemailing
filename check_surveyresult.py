@@ -35,7 +35,7 @@ def check_surveyresult(
 
     text_to_return = []
     if surveys_to_process:
-        text_to_return.append(f"Recipients {max_days} days reminder"))
+        text_to_return.append(f"Recipients {max_days} days reminder")
         text_to_return.append("--------------------------")
 
         text_to_return.append("Answer_id,\tEmail,\tDays_since_done,\tSuccesfull Attempt")
