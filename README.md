@@ -1,4 +1,5 @@
-# Automatic timed mail reminder for EASE project
+![](docs/ease_logo.png)
+# Automatic timed mail reminder for [EASE project](https://vbn.aau.dk/da/projects/intervention-mod-fartsyndere).
 
 ## Local installation
 
