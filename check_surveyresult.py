@@ -57,7 +57,7 @@ def main(cfg: dict):
     jlogger = logger.Logger(log_name, log_folder)
 
     # Just a test until merge into logger class
-    th = TeamsHandler(url=cfg["webhook_url"], level=logging.INFO)
+    th = TeamsHandler(url=cfg["teams_webhook"], level=logging.INFO)
 
     jlogger.logger.addHandler(th)
 
