@@ -4,7 +4,7 @@ import argparse
 
 from easemail import datasets, builder, logger, mailer
 from teams_logger import TeamsHandler
-
+import logging
 
 def read_job_config(filename: str) -> dict:
     """
@@ -23,7 +23,8 @@ def read_job_config(filename: str) -> dict:
 def check_surveyresult(
         attempt_no: int,
         max_days: int,
-        jdataset: datasets.SurveyDataset
+        jdataset: datasets.SurveyDataset,
+                jlogger : logger.Logger = None
         ) -> None:
     """
     Send mail reminder based on the surbey database
