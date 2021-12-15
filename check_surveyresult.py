@@ -23,7 +23,7 @@ def check_surveyresult(
         attempt_no: int,
         max_days: int,
         jdataset: datasets.SurveyDataset
-        ):
+        ) -> None:
     """
     Send mail reminder based on the surbey database
     """
@@ -32,9 +32,15 @@ def check_surveyresult(
     surveys_to_process = [s for s in survey_results if
                           s.days_since_done >= max_days and s.succesfull_attempt == attempt_no - 1]
 
-    print("Answer_id", "Email", "Days_since_done", "Succesfull Attempt")
-    for survey in surveys_to_process:
-        print(survey.recipient_id, survey.recipient_email, survey.days_since_done, survey.succesfull_attempt)
+    text_to_return = []
+    if surveys_to_process:
+        text_to_return.append(f"Recipients {max_days} days reminder"))
+        text_to_return.append("--------------------------")
+
+        text_to_return.append("Answer_id,\tEmail,\tDays_since_done,\tSuccesfull Attempt")
+        for survey in surveys_to_process:
+            text_to_return.append(f"{survey.recipient_email},\t{survey.days_since_done},\t{survey.succesfull_attempt}")
+    print("\n".join(text_to_return))
 
 def main(cfg: dict):
     """
@@ -48,15 +54,11 @@ def main(cfg: dict):
     jdataset = datasets.SQLAlchemyDataset(survey_db_url, survey_id)
 
 
-    print("Recipients 7 days reminder")
-    print("--------------------------")
     # run 1st attempt for those with 7+ days
     check_surveyresult(1, 7,
                    jdataset,
                    )
     print()
-    print("Recipients 45 days reminder")
-    print("---------------------------")
     # run 2nd attempt for those with 45+ days
     check_surveyresult(2, 45,
                    jdataset,
