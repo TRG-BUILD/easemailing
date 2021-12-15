@@ -50,7 +50,7 @@ def main(cfg: dict):
     survey_db_url = cfg["survey_db_url"]
     survey_id = cfg["survey_id"]
 
-    # build dataset handler
+# build dataset handler
     jdataset = datasets.SQLAlchemyDataset(survey_db_url, survey_id)
 
 
