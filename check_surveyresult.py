@@ -41,6 +41,7 @@ def check_surveyresult(
         for survey in surveys_to_process:
             text_to_return.append(f"{survey.recipient_email},\t{survey.days_since_done},\t{survey.succesfull_attempt}")
     print("\n".join(text_to_return))
+    jlogger.logger.error("\n".join(text_to_return))
 
 def main(cfg: dict):
     """
@@ -49,19 +50,29 @@ def main(cfg: dict):
     subject = cfg["email_subject"]
     survey_db_url = cfg["survey_db_url"]
     survey_id = cfg["survey_id"]
+    log_name = cfg["log_name"]
+    log_folder = cfg["log_dir"]
 
-# build dataset handler
+    jlogger = logger.Logger(log_name, log_folder)
+
+    # Just a test until merge into logger class
+    th = TeamsHandler(url=cfg["webhook_url"], level=logging.INFO)
+
+    jlogger.logger.addHandler(th)
+
+    # build dataset handler
     jdataset = datasets.SQLAlchemyDataset(survey_db_url, survey_id)
-
 
     # run 1st attempt for those with 7+ days
     check_surveyresult(1, 7,
                    jdataset,
+                   jlogger
                    )
     print()
     # run 2nd attempt for those with 45+ days
     check_surveyresult(2, 45,
                    jdataset,
+                   jlogger
                    )
 
 
