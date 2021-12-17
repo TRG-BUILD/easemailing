@@ -69,7 +69,7 @@ def send_reminders(
     else:
         out = f"Succes udsendt: {count['succes']}, fejlet: {count['fail']}"
         if jlogger:
-            jlogger.logger.warn(out)
+            jlogger.logger.info(out)
         else:
             print(out)
 
