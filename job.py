@@ -53,18 +53,25 @@ def send_reminders(
                           s.days_since_done >= max_days and s.succesfull_attempt == attempt_no - 1]
     emails_to_send = [jbuilder.build(s) for s in surveys_to_process]
 
+    count = {'fail': 0, 'succes': 0}
     for email, survey in zip(emails_to_send, surveys_to_process):
         try:
             jmailer.send([email], debug_mode)
             if jlogger:
                 jlogger.log_email_pass(survey.recipient_id, attempt_no)
-
+                count['succes'] += 1
             jdataset.update_attempt(attempt_no, survey.recipient_id, success=True)
         except mailer.MailingError:
             if jlogger:
                 jlogger.log_email_fail(survey.recipient_id, attempt_no)
+                count['fail'] += 1
             jdataset.update_attempt(attempt_no, survey.recipient_id, success=False)
-
+    else:
+        out = f"Succes udsendt: {count['succes']}, fejlet: {count['fail']}"
+        if jlogger:
+            jlogger.logger.warn(out)
+        else:
+            print(out)
 
 def main(cfg: dict):
     """
