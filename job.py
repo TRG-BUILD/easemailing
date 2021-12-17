@@ -3,6 +3,7 @@ import json
 import argparse
 
 from easemail import datasets, builder, logger, mailer
+from teams_logger import TeamsHandler
 
 
 def read_job_config(filename: str) -> dict:
