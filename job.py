@@ -111,6 +111,10 @@ def main(cfg: dict):
     # build logger
     jlogger = logger.Logger(log_name, log_folder)
 
+    # Adding teamshandler to jlogger
+    th = TeamsHandler(url=cfg["teams_webhook"], level=logger.logging.INFO)
+    jlogger.logger.addHandler(th)
+
     # run 1st attempt for those with 7+ days
     send_reminders(1, 7,
                    jdataset,
