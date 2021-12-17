@@ -4,7 +4,7 @@ import argparse
 
 from easemail import datasets, builder, logger, mailer
 from teams_logger import TeamsHandler
-
+import logging
 
 def read_job_config(filename: str) -> dict:
     """
@@ -23,7 +23,8 @@ def read_job_config(filename: str) -> dict:
 def check_surveyresult(
         attempt_no: int,
         max_days: int,
-        jdataset: datasets.SurveyDataset
+        jdataset: datasets.SurveyDataset,
+                jlogger : logger.Logger = None
         ) -> None:
     """
     Send mail reminder based on the surbey database
@@ -35,12 +36,15 @@ def check_surveyresult(
 
     text_to_return = []
     if surveys_to_process:
-        text_to_return.append(f"Recipients {max_days} days reminder")
+        text_to_return.append(f"Recipients {max_days} days reminder: {len(surveys_to_process)} emails to send")
         text_to_return.append("--------------------------")
 
-        text_to_return.append("Answer_id,\tEmail,\tDays_since_done,\tSuccesfull Attempt")
+        text_to_return.append("Answer_id,\tDays_since_done,\tSuccesfull Attempt")
         for survey in surveys_to_process:
-            text_to_return.append(f"{survey.recipient_email},\t{survey.days_since_done},\t{survey.succesfull_attempt}")
+            text_to_return.append(f"{survey.recipient_id},\t{survey.days_since_done},\t{survey.succesfull_attempt}")
+        else:
+            print(f"{len(surveys_to_process)} emails to send")
+
     print("\n".join(text_to_return))
     jlogger.logger.error("\n".join(text_to_return))
 
@@ -56,9 +60,8 @@ def main(cfg: dict):
 
     jlogger = logger.Logger(log_name, log_folder)
 
-    # Just a test until merge into logger class
+    # Adding teamshandler to jlogger
     th = TeamsHandler(url=cfg["teams_webhook"], level=logging.INFO)
-
     jlogger.logger.addHandler(th)
 
     # build dataset handler
