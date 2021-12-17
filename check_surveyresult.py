@@ -4,7 +4,6 @@ import argparse
 
 from easemail import datasets, builder, logger, mailer
 from teams_logger import TeamsHandler
-import logging
 
 def read_job_config(filename: str) -> dict:
     """
@@ -61,7 +60,7 @@ def main(cfg: dict):
     jlogger = logger.Logger(log_name, log_folder)
 
     # Adding teamshandler to jlogger
-    th = TeamsHandler(url=cfg["teams_webhook"], level=logging.INFO)
+    th = TeamsHandler(url=cfg["teams_webhook"], level=logger.logging.INFO)
     jlogger.logger.addHandler(th)
 
     # build dataset handler
