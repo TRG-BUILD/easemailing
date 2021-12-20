@@ -45,7 +45,7 @@ def check_surveyresult(
             print(f"{len(surveys_to_process)} emails to send")
 
     print("\n".join(text_to_return))
-    jlogger.logger.info("\n".join(text_to_return))
+    jlogger.logger.info("<br />".join(text_to_return))
 
 def main(cfg: dict):
     """
