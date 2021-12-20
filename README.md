@@ -113,3 +113,13 @@ Note: test databases can be manuallty re-built from `*.sql` files by for example
 ```sh
 sqlite3 env/matchig_testdb_real_emails.sqlite3 < test/data/build_matching_testdb_real_emails.sql
 ```
+
+## Setup crontab
+
+Create a cronjob by adding these lines:
+
+cron_check_surveyresul.py is run every 6th hour and job.py every hour a minute 01
+```sh
+* */6 * * * /path/to/installation/cron_check_surveyresult.sh >> $HOME/check_surveyresult.log  2>&1
+1 * * * * /path/to/installation/cron_job.sh >> $HOME/job.log  2>&1
+```
