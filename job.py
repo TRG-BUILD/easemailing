@@ -68,7 +68,7 @@ def send_reminders(
             jdataset.update_attempt(attempt_no, survey.recipient_id, success=False)
     else:
         out = f"{max_days} dage: Succes udsendt: {count['succes']}, fejlet: {count['fail']}"
-        if jlogger:
+        if jlogger and ( count['succes'] > 0 or count['fail'] > 0 ):
             jlogger.logger.info(out)
         else:
             print(out)
