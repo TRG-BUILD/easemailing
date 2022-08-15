@@ -110,8 +110,8 @@ python integration_test.py
 The test verifies that all mails are sent, and log is filled. In addition, check the `smtp.log` file for the sent email.
 
 Note: test databases can be manuallty re-built from `*.sql` files by for example using `sqlite3` command:
-```sh
-sqlite3 env/matchig_testdb_real_emails.sqlite3 < test/data/build_matching_testdb_real_emails.sql
+```shell
+$ sqlite3 env/matchig_testdb_real_emails.sqlite3 < test/data/build_matching_testdb_real_emails.sql
 ```
 
 ## Setup crontab
@@ -123,3 +123,14 @@ cron_check_surveyresul.py is run every 6th hour and job.py every hour a minute 0
 * */6 * * * /path/to/installation/cron_check_surveyresult.sh >> $HOME/check_surveyresult.log  2>&1
 1 * * * * /path/to/installation/cron_job.sh >> $HOME/job.log  2>&1
 ```
+
+## Remove Crontab
+
+Login to server
+
+```shell
+$ su trafikforskningsgruppen
+$ crontab -e
+```
+
+Comment (with #) or delete the lines from setup
