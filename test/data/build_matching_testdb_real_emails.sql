@@ -332,7 +332,8 @@ CREATE TABLE answers3 (
 	strategi_mail_send_first DATETIME, 
 	strategi_mail_send_first_failed DATETIME, 
 	strategi_mail_send_second DATETIME, 
-	strategi_mail_send_second_failed DATETIME, 
+	strategi_mail_send_second_failed DATETIME,
+	background_trg_hotline integer[],
 	PRIMARY KEY (answer_id), 
 	FOREIGN KEY(survey_id) REFERENCES surveys (id)
 );
@@ -352,6 +353,12 @@ as
 SELECT
     respondentid,
     julianday(datetime('now'))-julianday(closetime) as days_since_done,
+    CASE
+        WHEN a.strategi_mail_send_first IS NULL AND a.strategi_mail_send_second IS NULL THEN 0
+        WHEN a.strategi_mail_send_first IS NOT NULL AND a.strategi_mail_send_second IS NULL THEN 1
+        WHEN a.strategi_mail_send_first IS NOT NULL AND a.strategi_mail_send_second IS NOT NULL THEN 2
+    ELSE 2
+    END AS succesfull_attempt,
     email_strategi,
     strategi_mail_send_first,
     strategi_mail_send_second,
